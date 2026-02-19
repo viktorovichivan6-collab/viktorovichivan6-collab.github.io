@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Колесо удачи</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+        }
+
+        .container {
+            max-width: 400px;
+            width: 100%;
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .slide {
+            padding: 24px;
+            transition: transform 0.3s ease;
+        }
+
+        .slide.hidden {
+            display: none;
+        }
+
+        h2 {
+            font-size: 24px;
+            margin-bottom: 24px;
+            color: #333;
+            text-align: center;
+        }
+
+        .market-buttons {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            margin: 32px 0;
+        }
+
+        .market-btn {
+            flex: 1;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 16px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .market-btn.selected {
+            border-color: #667eea;
+            background: #f0f3ff;
+            transform: scale(1.02);
+        }
+
+        .market-btn img {
+            width: 48px;
+            height: 48px;
+            object-fit: contain;
+        }
+
+        .market-btn span {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .upload-area {
+            border: 2px dashed #cbd5e0;
+            border-radius: 16px;
+            padding: 32px;
+            text-align: center;
+            margin: 24px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f7fafc;
+        }
+
+        .upload-area:hover {
+            border-color: #667eea;
+            background: #f0f3ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #667eea;
+            background: #e6ecff;
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .file-info {
+            margin: 16px 0;
+            padding: 12px;
+            background: #e6ecff;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .file-info.show {
+            display: block;
+        }
+
+        .continue-btn {
+            width: 100%;
+            padding: 16px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .continue-btn.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .continue-btn:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        /* Стили для колеса */
+        .wheel-container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            margin: 20px auto 40px;
+        }
+
+        .wheel {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            position: relative;
+            overflow: hidden;
+            transition: transform 4s cubic-bezier(0.25, 0.1, 0.15, 1);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .wheel-segment {
+            position: absolute;
+            width: 50%;
+            height: 50%;
+            transform-origin: 100% 100%;
+            left: 0;
+            top: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            padding-right: 20px;
+            box-sizing: border-box;
+        }
+
+        .wheel-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px;
+            height: 60px;
+            background: white;
+            border-radius: 50%;
+            z-index: 10;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+        }
+
+        .wheel-pointer {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-top: 40px solid #ff4444;
+            z-index: 20;
+            filter: drop-shadow(0 4px 2px rgba(0,0,0,0.2));
+        }
+
+        .spin-btn {
+            display: block;
+            width: 200px;
+            margin: 20px auto;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .spin-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .result-message {
+            text-align: center;
+            margin-top: 20px;
+            padding: 16px;
+            border-radius: 12px;
+            background: #f0f3ff;
+            display: none;
+        }
+
+        .result-message.show {
+            display: block;
+        }
+
+        .prize-name {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 8px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #e0e0e0;
+            margin: 20px 0;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding: 0 10px;
+        }
+
+        .step {
+            flex: 1;
+            text-align: center;
+            font-size: 14px;
+            color: #999;
+            position: relative;
+        }
+
+        .step.active {
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .step.completed {
+            color: #48bb78;
+        }
+
+        .step:not(:last-child):after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: -50%;
+            width: 100%;
+            height: 2px;
+            background: #e0e0e0;
+            transform: translateY(-50%);
+        }
+
+        .step.active:after {
+            background: #667eea;
+        }
+
+        .step.completed:after {
+            background: #48bb78;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Индикатор шагов -->
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="step-indicator">
+            <div class="step active" id="step1">Выбор</div>
+            <div class="step" id="step2">Скриншот</div>
+            <div class="step" id="step3">Лотерея</div>
+        </div>
+
+        <!-- Слайд 1: Выбор маркетплейса -->
+        <div class="slide" id="slide1">
+            <h2>Выберите маркетплейс</h2>
+            <div class="market-buttons">
+                <button class="market-btn" data-market="wildberries" id="wbBtn">
+                    <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/wildberries.svg" alt="Wildberries" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'48\' height=\'48\' viewBox=\'0 0 24 24\'><text x=\'0\' y=\'20\' font-size=\'20\'>WB</text></svg>'">
+                    <span>Wildberries</span>
+                </button>
+                <button class="market-btn" data-market="ozon" id="ozonBtn">
+                    <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/ozon.svg" alt="Ozon" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'48\' height=\'48\' viewBox=\'0 0 24 24\'><text x=\'0\' y=\'20\' font-size=\'20\'>OZON</text></svg>'">
+                    <span>Ozon</span>
+                </button>
+            </div>
+            <button class="continue-btn" id="continueBtn1" onclick="nextSlide()">Продолжить</button>
+        </div>
+
+        <!-- Слайд 2: Загрузка скриншота -->
+        <div class="slide hidden" id="slide2">
+            <h2>Загрузите скриншот</h2>
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📸</div>
+                <p>Нажмите для выбора файла</p>
+                <p style="font-size: 12px; color: #999; margin-top: 8px;">или перетащите сюда</p>
+                <input type="file" id="fileInput" accept="image/*" style="display: none;">
+            </div>
+            <div class="file-info" id="fileInfo">
+                <span id="fileName"></span>
+            </div>
+            <button class="continue-btn" id="continueBtn2" onclick="nextSlide()" disabled>Продолжить</button>
+        </div>
+
+        <!-- Слайд 3: Колесо лотереи -->
+        <div class="slide hidden" id="slide3">
+            <h2>Крутите колесо удачи!</h2>
+            <div class="wheel-container">
+                <div class="wheel-pointer"></div>
+                <div class="wheel" id="wheel"></div>
+                <div class="wheel-center"></div>
+            </div>
+            <button class="spin-btn" id="spinBtn" onclick="spinWheel()">Крутить!</button>
+            <div class="result-message" id="resultMessage">
+                <div class="prize-name" id="prizeName"></div>
+                <p id="prizeDescription"></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Инициализация Telegram WebApp
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand(); // Разворачиваем на весь экран
+
+        // Призы и их вероятности (в сумме 100%)
+        const prizes = [
+            { name: "10% скидка", probability: 30, description: "Скидка 10% на любой товар" },
+            { name: "PlayStation 5", probability: 1, description: "Игровая консоль нового поколения" },
+            { name: "5000₽ на карту", probability: 5, description: "Деньги придут на карту в течение 24 часов" },
+            { name: "1000₽ на карту", probability: 15, description: "Пополнение карты на 1000 рублей" },
+            { name: "50% скидка", probability: 3, description: "Скидка 50% на любой товар" },
+            { name: "Haval H5", probability: 0.5, description: "Автомобиль Haval H5 (нужно забрать в салоне)" },
+            { name: "Air Pods", probability: 4, description: "Наушники AirPods Pro" },
+            { name: "500₽ на карту", probability: 25, description: "Пополнение карты на 500 рублей" },
+            { name: "20000₽ на карту", probability: 2, description: "Крупный денежный приз" },
+            { name: "10000₽ на карту", probability: 3.5, description: "Денежный приз 10000 рублей" },
+            { name: "Участие в суперигре", probability: 11, description: "Дополнительный шанс в следующем розыгрыше" }
+        ];
+
+        let currentSlide = 1;
+        let selectedMarket = null;
+        let uploadedFile = null;
+        let spinInProgress = false;
+        let currentRotation = 0;
+
+        // Обновление прогресс-бара
+        function updateProgress() {
+            const progress = (currentSlide / 3) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+            
+            document.querySelectorAll('.step').forEach((step, index) => {
+                step.classList.remove('active', 'completed');
+                if (index + 1 < currentSlide) {
+                    step.classList.add('completed');
+                } else if (index + 1 === currentSlide) {
+                    step.classList.add('active');
+                }
+            });
+        }
+
+        // Переключение между слайдами
+        function nextSlide() {
+            if (currentSlide < 3) {
+                if (currentSlide === 1 && !selectedMarket) {
+                    tg.showAlert('Пожалуйста, выберите маркетплейс');
+                    return;
+                }
+                if (currentSlide === 2 && !uploadedFile) {
+                    tg.showAlert('Пожалуйста, загрузите скриншот');
+                    return;
+                }
+
+                document.getElementById(`slide${currentSlide}`).classList.add('hidden');
+                currentSlide++;
+                document.getElementById(`slide${currentSlide}`).classList.remove('hidden');
+                updateProgress();
+
+                if (currentSlide === 3) {
+                    createWheel();
+                }
+            }
+        }
+
+        // Выбор маркетплейса
+        document.querySelectorAll('.market-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.market-btn').forEach(b => b.classList.remove('selected'));
+                this.classList.add('selected');
+                selectedMarket = this.dataset.market;
+                document.getElementById('continueBtn1').classList.add('active');
+            });
+        });
+
+        // Загрузка файла
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const continueBtn2 = document.getElementById('continueBtn2');
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                handleFileUpload(file);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                handleFileUpload(file);
+            }
+        });
+
+        function handleFileUpload(file) {
+            uploadedFile = file;
+            fileName.textContent = `📁 ${file.name}`;
+            fileInfo.classList.add('show');
+            continueBtn2.classList.add('active');
+        }
+
+        // Создание колеса
+        function createWheel() {
+            const wheel = document.getElementById('wheel');
+            wheel.innerHTML = '';
+            
+            const segmentAngle = 360 / prizes.length;
+            
+            prizes.forEach((prize, index) => {
+                const segment = document.createElement('div');
+                segment.className = 'wheel-segment';
+                
+                // Рассчитываем угол поворота для каждого сегмента
+                const rotate = index * segmentAngle;
+                segment.style.transform = `rotate(${rotate}deg) skewY(${90 - segmentAngle}deg)`;
+                segment.style.backgroundColor = `hsl(${index * (360 / prizes.length)}, 70%, 60%)`;
+                
+                // Добавляем текст (поворачиваем обратно)
+                const textSpan = document.createElement('span');
+                textSpan.style.transform = `skewY(-${90 - segmentAngle}deg) rotate(${segmentAngle/2}deg)`;
+                textSpan.style.position = 'absolute';
+                textSpan.style.left = '50%';
+                textSpan.style.top = '25%';
+                textSpan.style.transformOrigin = '0 0';
+                textSpan.style.whiteSpace = 'nowrap';
+                
+                // Сокращаем текст для отображения
+                let shortName = prize.name;
+                if (shortName.length > 10) {
+                    if (shortName.includes('PlayStation')) shortName = 'PS5';
+                    else if (shortName.includes('Haval')) shortName = 'Haval';
+                    else shortName = shortName.substring(0, 8) + '...';
+                }
+                textSpan.textContent = shortName;
+                
+                segment.appendChild(textSpan);
+                wheel.appendChild(segment);
+            });
+        }
+
+        // Функция для выбора приза на основе вероятностей
+        function getRandomPrize() {
+            const random = Math.random() * 100;
+            let cumulativeProbability = 0;
+            
+            for (const prize of prizes) {
+                cumulativeProbability += prize.probability;
+                if (random <= cumulativeProbability) {
+                    return prize;
+                }
+            }
+            return prizes[0]; // На всякий случай
+        }
+
+        // Вращение колеса
+        function spinWheel() {
+            if (spinInProgress) return;
+            
+            spinInProgress = true;
+            const spinBtn = document.getElementById('spinBtn');
+            spinBtn.disabled = true;
+            
+            // Получаем случайный приз
+            const selectedPrize = getRandomPrize();
+            
+            // Находим индекс выпавшего приза
+            const prizeIndex = prizes.findIndex(p => p.name === selectedPrize.name);
+            
+            // Рассчитываем угол для остановки на нужном секторе
+            const segmentAngle = 360 / prizes.length;
+            // Добавляем случайное смещение в пределах сектора
+            const randomOffset = Math.random() * segmentAngle;
+            // Целевой угол (чтобы сектор оказался под указателем)
+            const targetAngle = 360 - (prizeIndex * segmentAngle + segmentAngle/2 + randomOffset) + 90;
+            
+            // Добавляем несколько полных оборотов для красоты
+            const spins = 5;
+            const finalRotation = currentRotation + (spins * 360) + targetAngle;
+            
+            // Анимируем вращение
+            const wheel = document.getElementById('wheel');
+            wheel.style.transform = `rotate(${finalRotation}deg)`;
+            
+            // Ждем окончания анимации
+            setTimeout(() => {
+                spinInProgress = false;
+                currentRotation = finalRotation % 360;
+                
+                // Показываем результат
+                const resultMessage = document.getElementById('resultMessage');
+                const prizeName = document.getElementById('prizeName');
+                const prizeDescription = document.getElementById('prizeDescription');
+                
+                prizeName.textContent = selectedPrize.name;
+                prizeDescription.textContent = selectedPrize.description;
+                resultMessage.classList.add('show');
+                
+                // Отправляем результат в бота
+                tg.sendData(JSON.stringify({
+                    market: selectedMarket,
+                    prize: selectedPrize.name,
+                    timestamp: new Date().toISOString()
+                }));
+                
+                // Закрываем WebApp через 3 секунды
+                setTimeout(() => {
+                    tg.close();
+                }, 3000);
+            }, 4000);
+        }
+
+        // Инициализация
+        updateProgress();
+
+        // Основная кнопка Telegram (если нужно)
+        tg.MainButton.setText('Закрыть');
+        tg.MainButton.hide();
+    </script>
+</body>
+</html>
